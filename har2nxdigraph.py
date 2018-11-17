@@ -5,9 +5,9 @@ behavior of a browser accessing a specific webpage.
 
 @author Skyler Bistarkey
 '''
-
-import time
 from datetime import datetime
+import time
+import sys
 
 import json
 import networkx as nx
@@ -48,6 +48,9 @@ class HARParser():
             temp_list = [] # Temporary list to hold a single entry in the graph list
 
             for entry in self._get_entries():
+                if "headersSize" not in entry["response"] or "bodySize" not in entry["response"]:
+                    continue
+
                 # We only really care about 3 things for each entry -
                 #   1. The time the entry was created
                 #   2. How long the entry took before the request was satisfied
@@ -84,16 +87,23 @@ class HARParser():
     # Create a directed network graph from a series parallel transfers
     def create_digraph(self, outfile):
         graph_list = self._make_graph_as_list()
-        sync_str = "sync"
 
         if len(graph_list) == 0:
             raise Exception("Error: List parsed from HAR file was empty!")
 
-        prev_node = "start"
-        next_node = sync_str + "0"
+        # Strip off empty frontloaded lists
+        while len(graph_list[0]) == 0:
+            graph_list = graph_list[1:]
+
+        sync_str = "sync"
 
         graph = nx.DiGraph()
         graph.add_node("start", serverport=self._port, peers=self._server_and_port)
+        graph.add_node("timewait", time="1,2,3,4,5,6,7,8,9,10,11,12,13,14,15") # Wait between 1-15 secs before trying to browse
+        graph.add_edge("start", "timewait")
+
+        prev_node = "timewait"
+        next_node = sync_str + "0"
         graph.add_node(next_node)
 
         # Each collection of transfers branches out from the previous sync and collects at the next one
@@ -117,6 +127,10 @@ class HARParser():
         nx.write_graphml(graph, outfile)
 
 if __name__ == "__main__":
-    hp = HARParser("./Archive 18-11-17 10-06-12.har", "server1:443")
+    if len(sys.argv) != 4:
+        print("USAGE: python {} C:/path/to/har/file.har servername:serverport outfile.xml".format(sys.argv[0]))
+        sys.exit(1)
 
-    hp.create_digraph("test.xml")
+    hp = HARParser(sys.argv[1], sys.argv[2])
+
+    hp.create_digraph(sys.argv[3])
