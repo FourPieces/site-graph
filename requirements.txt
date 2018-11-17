@@ -1,0 +1,4 @@
+#
+######## requirements.txt for har2tgen.py #######
+networkx
+#
