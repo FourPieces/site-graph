@@ -29,6 +29,7 @@ class HARParser():
             print("Error getting entries from HAR file: " + str(e))
 
     # Return the time of the HAR entry in milliseconds
+    # HAR time entries are formatted as YYYY-mm-ddTHH:MM:SS.mmm-TT:TT
     def _time_fmt_to_ms(self, timestring):
         # Remove the timezone - it's not important for this
         timestring, ms = timestring[:-6].split(".")
@@ -47,7 +48,10 @@ class HARParser():
             temp_list = [] # Temporary list to hold a single entry in the graph list
 
             for entry in self._get_entries():
-                # Get the size of the response in KiB
+                # We only really care about 3 things for each entry -
+                #   1. The time the entry was created
+                #   2. How long the entry took before the request was satisfied
+                #   3. How big was the file obtained
                 entry_time = self._time_fmt_to_ms(entry["startedDateTime"])
                 entry_time_len = int(entry["time"])
                 entry_size = (float(entry["response"]["headersSize"]) + float(entry["response"]["bodySize"])) / 1024.0
@@ -64,6 +68,7 @@ class HARParser():
 
             graph_list.append(temp_list.copy())
 
+            # Possibly more useful than scanning the XML file
             if debug_log:
                 for i in graph_list:
                     for j in i:
