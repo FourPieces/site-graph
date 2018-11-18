@@ -95,22 +95,22 @@ class HARParser():
         while len(graph_list[0]) == 0:
             graph_list = graph_list[1:]
 
-        sync_str = "sync"
+        sync_str = "pause_sync"
 
         graph = nx.DiGraph()
         graph.add_node("start", serverport=self._port, peers=self._server_and_port)
-        graph.add_node("timewait", time="1,2,3,4,5,6,7,8,9,10,11,12,13,14,15") # Wait between 1-15 secs before trying to browse
-        graph.add_edge("start", "timewait")
+        graph.add_node("pause0", time="1,2,3,4,5,6,7,8,9,10,11,12,13,14,15") # Wait between 1-15 secs before trying to browse
+        graph.add_edge("start", "pause0")
 
-        prev_node = "timewait"
+        prev_node = "pause0"
         next_node = sync_str + "0"
         graph.add_node(next_node)
 
         # Each collection of transfers branches out from the previous sync and collects at the next one
         for i, graph_entry in enumerate(graph_list):
             for j, indiv_entry in enumerate(graph_entry):
-                node_entry = "transfer{}-{}".format(i, j)
-                xfer_size = "{:0.2f} KiB".format(indiv_entry[2]) # Round transfer size to 2 decimal places
+                node_entry = "transfer{}_{}".format(i, j)
+                xfer_size = "{} KiB".format(int(round(float(indiv_entry[2])))) # Fractional KBs aren't allowed in Shadow
 
                 graph.add_node(node_entry, type="get", protocol="tcp", size=xfer_size)
                 graph.add_edge(prev_node, node_entry)
@@ -120,9 +120,9 @@ class HARParser():
             next_node = sync_str + str(i+1)
 
         # For now, just add a pause of 1 min before going back to the start
-        graph.add_node("pause", time="60")
-        graph.add_edge(prev_node, "pause")
-        graph.add_edge("pause", "start")
+        graph.add_node("pause1", time="60")
+        graph.add_edge(prev_node, "pause1")
+        graph.add_edge("pause1", "start")
             
         nx.write_graphml(graph, outfile)
 
