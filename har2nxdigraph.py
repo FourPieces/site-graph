@@ -85,7 +85,7 @@ class HARParser():
             return []
 
     # Create a directed network graph from a series parallel transfers
-    def create_digraph(self, outfile):
+    def create_digraph(self, outfile, socks_proxy="localhost:9000"):
         graph_list = self._make_graph_as_list()
 
         if len(graph_list) == 0:
@@ -98,8 +98,9 @@ class HARParser():
         sync_str = "pause_sync"
 
         graph = nx.DiGraph()
-        graph.add_node("start", serverport=self._port, peers=self._server_and_port)
+        graph.add_node("start", serverport=self._port, peers=self._server_and_port, socksproxy=socks_proxy)
         graph.add_node("pause0", time="1,2,3,4,5,6,7,8,9,10,11,12,13,14,15") # Wait between 1-15 secs before trying to browse
+        graph.add_node("end")
         graph.add_edge("start", "pause0")
 
         prev_node = "pause0"
@@ -122,7 +123,7 @@ class HARParser():
         # For now, just add a pause of 1 min before going back to the start
         graph.add_node("pause1", time="60")
         graph.add_edge(prev_node, "pause1")
-        graph.add_edge("pause1", "start")
+        graph.add_edge("pause1", "end")
             
         nx.write_graphml(graph, outfile)
 
