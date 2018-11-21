@@ -58,6 +58,10 @@ class HARParser():
                 entry_time = self._time_fmt_to_ms(entry["startedDateTime"])
                 entry_time_len = int(entry["time"])
                 entry_size = (float(entry["response"]["headersSize"]) + float(entry["response"]["bodySize"])) / 1024.0
+
+                # Shadow TGEN breaks with 0 KiB GETs
+                if entry_size < 1:
+                    entry_size = 1
                 
                 # If the request time of the current entry is within any of the waiting periods of the
                 # temp list, it is considered to be part of that burst
